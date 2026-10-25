@@ -720,6 +720,7 @@
 
 (ert-deftest codex-ide-submit-uses-session-aware-turn-config ()
   (let ((project-dir (codex-ide-test--make-temp-project))
+        (codex-ide-network-access "off")
         (codex-ide-model "gpt-5.4")
         (codex-ide-fast "off")
         (codex-ide-approval-policy "on-request")
@@ -731,6 +732,7 @@
 				 (codex-ide-test-with-fake-processes
 				  (let ((session (codex-ide--create-process-session)))
 				    (setf (codex-ide-session-thread-id session) "thread-config-1")
+				    (codex-ide-config-set-session-value 'network-access "on" session)
 				    (codex-ide-config-set-session-value 'approval-policy "never" session)
 				    (codex-ide-config-set-session-value 'sandbox-mode "read-only" session)
 				    (codex-ide-config-set-session-value 'model "gpt-5.4-mini" session)
@@ -746,11 +748,37 @@
 					(codex-ide--submit-prompt)))
 				    (should (equal (alist-get 'approvalPolicy submitted) "never"))
 				    (should (equal (alist-get 'sandboxPolicy submitted)
-						   '((type . "readOnly"))))
+						   '((type . "readOnly")
+						     (networkAccess . t))))
 				    (should (equal (alist-get 'model submitted) "gpt-5.4-mini"))
 				    (should (equal (alist-get 'serviceTier submitted) "priority"))
 				    (should (equal (alist-get 'effort submitted) "high"))
 				    (should (equal (alist-get 'personality submitted) "friendly")))))))
+
+(ert-deftest codex-ide-network-access-respects-scope-and-history ()
+  (let ((project-dir (codex-ide-test--make-temp-project))
+        (codex-ide-sandbox-mode "workspace-write")
+        (codex-ide-network-access "off")
+        (codex-ide-config-history nil)
+        (codex-ide-config--history-group nil))
+    (codex-ide-test-with-fixture project-dir
+      (codex-ide-test-with-fake-processes
+        (let ((session (codex-ide--create-process-session)))
+          (codex-ide-config-apply 'network-access "on" 'this-session session)
+          (should (equal codex-ide-network-access "off"))
+          (should (eq (alist-get 'networkAccess
+                                 (codex-ide--turn-start-sandbox-policy session)) t))
+          (codex-ide-config-restore-last)
+          (should (equal (codex-ide-config-effective-value 'network-access session)
+                         "off"))
+          (codex-ide-config-apply 'network-access "on" 'all-sessions session)
+          (should (equal codex-ide-network-access "on"))
+          (should (equal (codex-ide-config-effective-value 'network-access session)
+                         "on"))
+          (codex-ide-config-apply 'network-access "off" 'future-sessions session)
+          (should (equal codex-ide-network-access "off"))
+          (should (equal (codex-ide-config-effective-value 'network-access session)
+                         "on")))))))
 
 (provide 'codex-ide-config-tests)
 

@@ -173,13 +173,19 @@
 
 (defun codex-ide--turn-start-sandbox-policy (&optional session)
   "Build a `sandboxPolicy` object for `turn/start` from SESSION settings."
-  (when-let* ((mode (codex-ide-config-effective-value 'sandbox-mode session)))
+  (when-let* ((mode (codex-ide-config-effective-value 'sandbox-mode session))
+              (network-access
+               (if (equal (codex-ide-config-effective-value
+                           'network-access session) "on")
+                   t :json-false)))
     (pcase mode
       ("read-only"
-       '((type . "readOnly")))
+       `((type . "readOnly")
+         (networkAccess . ,network-access)))
       ("workspace-write"
        `((type . "workspaceWrite")
-         (writableRoots . [,(codex-ide--get-working-directory)])))
+         (writableRoots . [,(codex-ide--get-working-directory)])
+         (networkAccess . ,network-access)))
       ;; `danger-full-access` remains the local UI spelling while app-server
       ;; expects the camelCase sandbox policy type on turn-scoped overrides.
       ("danger-full-access"

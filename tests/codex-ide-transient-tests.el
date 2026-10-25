@@ -62,6 +62,27 @@
               (equal (oref obj key) key))
             (transient-suffixes prefix)))
 
+(ert-deftest codex-ide-command-network-menu-applies-setting-and-explains-full-access ()
+  (let ((codex-ide-network-access "off")
+        (codex-ide-sandbox-mode "workspace-write")
+        (codex-ide-agent-config-menu-scope 'future-sessions)
+        (codex-ide-config-history nil)
+        (codex-ide-config--history-group nil))
+    (cl-letf (((symbol-function 'codex-ide--session-for-current-buffer)
+               (lambda () nil)))
+      (should (eq (codex-ide-test--transient-suffix-prop
+                   (transient-get-suffix 'codex-ide-agent-config-menu "n")
+                   :command)
+                  #'codex-ide--set-network-access))
+      (codex-ide--set-network-access "on")
+      (should (equal codex-ide-network-access "on"))
+      (should (string-match-p "Sandbox network on (next turn)"
+                              (codex-ide--config-menu-network-access-label)))
+      (setq codex-ide-network-access "off"
+            codex-ide-sandbox-mode "danger-full-access")
+      (should (string-match-p "off (ignored: full access allows network)"
+                              (codex-ide--config-menu-network-access-label))))))
+
 (ert-deftest codex-ide-menu-exposes-navigation-and-view-suffixes ()
   (should (transient-get-suffix 'codex-ide-menu "b"))
   (should (transient-get-suffix 'codex-ide-menu "p"))
@@ -191,13 +212,13 @@
                                         suffix :description))
                                      agent-suffixes)))
     (should (equal descriptions '("Agent Config" "Presets" "Actions" "Navigation")))
-    (should (equal keys '("m" "f" "r" "a" "s" "p")))
+    (should (equal keys '("m" "f" "r" "a" "s" "n" "p")))
     (should (equal actions-keys '("o" "h")))
     (should (equal navigation-keys '("DEL" "C-g")))
     (should (member "o" actions-keys))
     (should (member "h" actions-keys))
     (should-error (transient-get-suffix 'codex-ide-agent-config-menu "q"))
-    (should (equal agent-descriptions '(nil nil nil nil nil nil)))))
+    (should (equal agent-descriptions '(nil nil nil nil nil nil nil)))))
 
 (ert-deftest codex-ide-agent-config-menu-agent-labels-show-current-values ()
   (let ((codex-ide-model "gpt-5.4")
@@ -406,6 +427,7 @@
 
 (ert-deftest codex-ide-save-config-persists-reasoning-effort ()
   (let ((codex-ide-reasoning-effort "high")
+        (codex-ide-network-access "on")
         (codex-ide-fast "on")
         (codex-ide-image-detail "high")
         (codex-ide-new-session-split 'vertical)
@@ -415,6 +437,7 @@
                (lambda (symbol value)
                  (push (cons symbol value) saved))))
       (codex-ide--save-config))
+    (should (equal (alist-get 'codex-ide-network-access saved) "on"))
     (should (equal (alist-get 'codex-ide-reasoning-effort saved)
                    "high"))
     (should (equal (alist-get 'codex-ide-fast saved)

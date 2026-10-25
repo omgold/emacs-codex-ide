@@ -51,6 +51,7 @@
 (defvar codex-ide-running-submit-action)
 (defvar codex-ide-approval-policy)
 (defvar codex-ide-sandbox-mode)
+(defvar codex-ide-network-access)
 (defvar codex-ide-personality)
 (defvar codex-ide-new-session-split)
 (defvar codex-ide-enable-emacs-tool-bridge)
@@ -296,6 +297,24 @@
 			  (or value
 			      (codex-ide-config-read-value 'sandbox-mode))))
 
+(defun codex-ide--config-menu-network-access-label ()
+  "Describe command networking and its sandbox applicability."
+  (let ((session (codex-ide--session-for-current-buffer)))
+    (concat (codex-ide--config-menu-agent-value-label 'network-access)
+            (if (equal (codex-ide-config-effective-value 'sandbox-mode session)
+                       "danger-full-access")
+                " (ignored: full access allows network)"
+              " (next turn)"))))
+
+(transient-define-suffix codex-ide--set-network-access (&optional value)
+  "Set network access for sandboxed commands in subsequent turns."
+  :description #'codex-ide--config-menu-network-access-label
+  :transient t
+  (interactive)
+  (codex-ide--config-menu-apply-agent-setting
+   'network-access
+   (or value (codex-ide-config-read-value 'network-access))))
+
 (transient-define-suffix codex-ide--set-personality (&optional value)
 			 "Set `codex-ide-personality'."
 			 :description (lambda ()
@@ -434,6 +453,7 @@
                            codex-ide-running-submit-action)
   (customize-save-variable 'codex-ide-approval-policy codex-ide-approval-policy)
   (customize-save-variable 'codex-ide-sandbox-mode codex-ide-sandbox-mode)
+  (customize-save-variable 'codex-ide-network-access codex-ide-network-access)
   (customize-save-variable 'codex-ide-personality codex-ide-personality)
   (customize-save-variable 'codex-ide-new-session-split
                            codex-ide-new-session-split)
@@ -482,6 +502,7 @@
 			   ("r" codex-ide--set-reasoning-effort)
 			   ("a" codex-ide--set-approval-policy)
 			   ("s" codex-ide--set-sandbox-mode)
+			   ("n" codex-ide--set-network-access)
 			   ("p" codex-ide--set-personality)]
 			  ["Presets"
 			   :class transient-column

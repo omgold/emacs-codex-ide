@@ -30,6 +30,7 @@
 (defvar codex-ide-reasoning-effort)
 (defvar codex-ide-approval-policy)
 (defvar codex-ide-sandbox-mode)
+(defvar codex-ide-network-access)
 (defvar codex-ide-personality)
 
 (defconst codex-ide-config--other-choice "Other..."
@@ -66,6 +67,12 @@
      :global-var codex-ide-sandbox-mode
      :applies-to-live-session t
      :protocol-key sandbox)
+    (network-access
+     :label "sandbox network"
+     :prompt "Sandbox network access (next turn)"
+     :choices ("off" "on")
+     :global-var codex-ide-network-access
+     :applies-to-live-session t)
     (personality
      :label "personality"
      :prompt "Personality"

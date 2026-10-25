@@ -244,6 +244,15 @@ When nil, inline diffs never start folded."
   :group 'codex-ide)
 
 ;;;###autoload
+(defcustom codex-ide-network-access "off"
+  "Network access for sandboxed commands in subsequent Codex turns.
+Applies to read-only and workspace-write sandboxes.  Full access always
+allows command networking, regardless of this setting.  This does not
+control model connections, web tools, or external MCP services."
+  :type '(choice (const "off") (const "on"))
+  :group 'codex-ide)
+
+;;;###autoload
 (defcustom codex-ide-personality "pragmatic"
   "Personality for new or resumed Codex threads and later turns."
   :type '(choice (const "none")
